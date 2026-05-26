@@ -23,10 +23,7 @@
     gap: 10px;
   }
   h1 { font-size: 2rem; }
-  .mode-toggle {
-    display: flex;
-    gap: 8px;
-  }
+  .mode-toggle { display: flex; gap: 8px; }
   button {
     cursor: pointer;
     border: none;
@@ -120,9 +117,7 @@
     background: #c5e1a5;
     transform: scale(1.05);
   }
-  .cell.admin.drawn:hover {
-    background: #ffab91;
-  }
+  .cell.admin.drawn:hover { background: #ffab91; }
 
   .history {
     background: rgba(0,0,0,0.2);
@@ -137,11 +132,7 @@
     letter-spacing: 1px;
     opacity: 0.8;
   }
-  .history-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
+  .history-list { display: flex; flex-wrap: wrap; gap: 6px; }
   .history-item {
     background: rgba(255,255,255,0.15);
     padding: 4px 10px;
@@ -149,13 +140,8 @@
     font-size: 0.9rem;
     font-weight: 600;
   }
-  .history-item.latest {
-    background: #ff6b35;
-  }
-  .history-empty {
-    opacity: 0.5;
-    font-style: italic;
-  }
+  .history-item.latest { background: #ff6b35; }
+  .history-empty { opacity: 0.5; font-style: italic; }
 
   .modal {
     position: fixed;
@@ -183,15 +169,8 @@
     font-size: 1rem;
     margin-bottom: 16px;
   }
-  .modal-content input:focus {
-    outline: none;
-    border-color: #2a5298;
-  }
-  .modal-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
+  .modal-content input:focus { outline: none; border-color: #2a5298; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
   .error-msg {
     color: #e53935;
     font-size: 0.9rem;
@@ -206,10 +185,25 @@
     margin-bottom: 16px;
     font-size: 0.9rem;
   }
-  .loading {
-    text-align: center;
-    padding: 40px;
-    opacity: 0.6;
+  .loading { text-align: center; padding: 40px; opacity: 0.6; }
+  .connection-status {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.6);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+  }
+  .connection-status.online::before {
+    content: '●';
+    color: #4caf50;
+    margin-right: 6px;
+  }
+  .connection-status.offline::before {
+    content: '●';
+    color: #e53935;
+    margin-right: 6px;
   }
 
   @media (max-width: 700px) {
@@ -238,12 +232,10 @@
   <div class="last-number">
     <div class="last-number-label">Dernier numéro</div>
     <div id="lastNumber" class="last-number-value empty">—</div>
-    <div class="stats">
-      <span id="drawnCount">0</span> / 90 tirés
-    </div>
+    <div class="stats"><span id="drawnCount">0</span> / 90 tirés</div>
   </div>
 
-  <div id="loadingState" class="loading">Chargement…</div>
+  <div id="loadingState" class="loading">Connexion à Firebase…</div>
   <div id="grid" class="grid" style="display:none;"></div>
 
   <div class="history">
@@ -261,7 +253,7 @@
 <div id="passwordModal" class="modal" style="display:none;">
   <div class="modal-content">
     <h2>Accès admin</h2>
-    <p style="margin-bottom: 14px; color: #666;">Entre le mot de passe pour passer en mode admin.</p>
+    <p style="margin-bottom: 14px; color: #666;">Entre le mot de passe admin.</p>
     <input type="password" id="passwordInput" placeholder="Mot de passe" autocomplete="off">
     <div id="passwordError" class="error-msg"></div>
     <div class="modal-actions">
@@ -271,26 +263,44 @@
   </div>
 </div>
 
-<div id="setupModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <h2>Configuration initiale</h2>
-    <p style="margin-bottom: 14px; color: #666;">Première utilisation : définis le mot de passe admin. Il sera partagé avec tous ceux qui ouvriront ce bingo.</p>
-    <input type="password" id="setupPasswordInput" placeholder="Nouveau mot de passe admin" autocomplete="off">
-    <div id="setupError" class="error-msg"></div>
-    <div class="modal-actions">
-      <button id="submitSetupBtn" class="btn-primary">Créer</button>
-    </div>
-  </div>
-</div>
+<div id="connStatus" class="connection-status offline">Hors ligne</div>
 
-<script>
+<script type="module">
+  // ============================================================
+  // ⚠️  CONFIGURATION FIREBASE — À REMPLACER PAR TES VALEURS ⚠️
+  // ============================================================
+  // Copie ici l'objet firebaseConfig affiché dans la console Firebase
+  // (Paramètres du projet → Vos applications → bloc Configuration SDK)
+  const firebaseConfig = {
+  apiKey: "AIzaSyDoRNEUMmkRQz4Y349w_6N3mnjcqwcx1S0",
+  authDomain: "bingo-d-esther.firebaseapp.com",
+  databaseURL: "https://bingo-d-esther-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bingo-d-esther",
+  storageBucket: "bingo-d-esther.firebasestorage.app",
+  messagingSenderId: "434410908040",
+  appId: "1:434410908040:web:7aff3be56760b91d5e323d",
+  measurementId: "G-6LZXDR5X16"
+};
+
+  // ============================================================
+  // MOT DE PASSE ADMIN — change cette valeur
+  // ============================================================
+  const ADMIN_PASSWORD = "change-moi";
+
+  // ============================================================
+  // (Pas besoin de modifier en dessous)
+  // ============================================================
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const stateRef = ref(db, 'bingo/state');
+
   const TOTAL = 90;
-  const STATE_KEY = 'bingo-state';
-  const PASSWORD_KEY = 'bingo-admin-password';
-
   let state = { drawn: [], lastNumber: null };
   let isAdmin = false;
-  let pollInterval = null;
 
   const grid = document.getElementById('grid');
   const loadingState = document.getElementById('loadingState');
@@ -302,17 +312,13 @@
   const viewPublicBtn = document.getElementById('viewPublicBtn');
   const viewAdminBtn = document.getElementById('viewAdminBtn');
   const resetBtn = document.getElementById('resetBtn');
+  const connStatus = document.getElementById('connStatus');
 
   const passwordModal = document.getElementById('passwordModal');
   const passwordInput = document.getElementById('passwordInput');
   const passwordError = document.getElementById('passwordError');
   const submitPasswordBtn = document.getElementById('submitPasswordBtn');
   const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
-
-  const setupModal = document.getElementById('setupModal');
-  const setupPasswordInput = document.getElementById('setupPasswordInput');
-  const setupError = document.getElementById('setupError');
-  const submitSetupBtn = document.getElementById('submitSetupBtn');
 
   function buildGrid() {
     grid.innerHTML = '';
@@ -358,26 +364,35 @@
     }
   }
 
-  async function loadState() {
-    try {
-      const result = await window.storage.get(STATE_KEY, true);
-      if (result && result.value) {
-        state = JSON.parse(result.value);
-        if (!Array.isArray(state.drawn)) state.drawn = [];
-      }
-    } catch (e) {
+  // Écoute temps réel des changements
+  onValue(stateRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      state = {
+        drawn: Array.isArray(data.drawn) ? data.drawn : [],
+        lastNumber: data.lastNumber ?? null
+      };
+    } else {
       state = { drawn: [], lastNumber: null };
     }
     loadingState.style.display = 'none';
     grid.style.display = 'grid';
+    connStatus.className = 'connection-status online';
+    connStatus.textContent = 'En ligne';
     render();
-  }
+  }, (error) => {
+    console.error('Firebase error:', error);
+    loadingState.textContent = '❌ Erreur de connexion. Vérifie ta config Firebase.';
+    connStatus.className = 'connection-status offline';
+    connStatus.textContent = 'Erreur';
+  });
 
   async function saveState() {
     try {
-      await window.storage.set(STATE_KEY, JSON.stringify(state), true);
+      await set(stateRef, state);
     } catch (e) {
       console.error('Save failed', e);
+      alert('Erreur de sauvegarde : ' + e.message);
     }
   }
 
@@ -403,19 +418,6 @@
     await saveState();
   }
 
-  async function getStoredPassword() {
-    try {
-      const result = await window.storage.get(PASSWORD_KEY, true);
-      return result && result.value ? result.value : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  async function setStoredPassword(pwd) {
-    await window.storage.set(PASSWORD_KEY, pwd, true);
-  }
-
   function setMode(admin) {
     isAdmin = admin;
     adminBanner.style.display = admin ? 'block' : 'none';
@@ -424,49 +426,18 @@
     viewAdminBtn.classList.toggle('btn-secondary', !admin);
     viewPublicBtn.classList.toggle('btn-active', !admin);
     viewPublicBtn.classList.toggle('btn-secondary', admin);
-
-    if (admin) {
-      if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-    } else {
-      startPolling();
-    }
     render();
   }
 
-  function startPolling() {
-    if (pollInterval) return;
-    pollInterval = setInterval(async () => {
-      if (isAdmin) return;
-      try {
-        const result = await window.storage.get(STATE_KEY, true);
-        if (result && result.value) {
-          const fresh = JSON.parse(result.value);
-          if (JSON.stringify(fresh) !== JSON.stringify(state)) {
-            state = fresh;
-            if (!Array.isArray(state.drawn)) state.drawn = [];
-            render();
-          }
-        }
-      } catch (e) {}
-    }, 2000);
-  }
-
-  async function tryAdminLogin() {
-    const stored = await getStoredPassword();
-    if (!stored) {
-      setupModal.style.display = 'flex';
-      setupPasswordInput.focus();
-      return;
-    }
+  function tryAdminLogin() {
     passwordModal.style.display = 'flex';
     passwordError.textContent = '';
     passwordInput.value = '';
     passwordInput.focus();
   }
 
-  submitPasswordBtn.addEventListener('click', async () => {
-    const stored = await getStoredPassword();
-    if (passwordInput.value === stored) {
+  submitPasswordBtn.addEventListener('click', () => {
+    if (passwordInput.value === ADMIN_PASSWORD) {
       passwordModal.style.display = 'none';
       setMode(true);
     } else {
@@ -480,20 +451,6 @@
     passwordModal.style.display = 'none';
   });
 
-  submitSetupBtn.addEventListener('click', async () => {
-    const pwd = setupPasswordInput.value.trim();
-    if (pwd.length < 3) {
-      setupError.textContent = 'Au moins 3 caractères';
-      return;
-    }
-    await setStoredPassword(pwd);
-    setupModal.style.display = 'none';
-    setMode(true);
-  });
-  setupPasswordInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitSetupBtn.click();
-  });
-
   viewAdminBtn.addEventListener('click', () => {
     if (isAdmin) return;
     tryAdminLogin();
@@ -505,7 +462,6 @@
   resetBtn.addEventListener('click', resetGame);
 
   buildGrid();
-  loadState().then(() => startPolling());
 </script>
 </body>
 </html>
