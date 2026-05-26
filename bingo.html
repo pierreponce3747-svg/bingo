@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    min-height: 100vh;
+    color: #fff;
+    padding: 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  h1 { font-size: 2rem; }
+  .mode-toggle {
+    display: flex;
+    gap: 8px;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: transform 0.1s, background 0.2s;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  .btn-primary { background: #4caf50; color: #fff; }
+  .btn-primary:hover { background: #43a047; }
+  .btn-secondary { background: rgba(255,255,255,0.15); color: #fff; }
+  .btn-secondary:hover { background: rgba(255,255,255,0.25); }
+  .btn-danger { background: #e53935; color: #fff; }
+  .btn-danger:hover { background: #d32f2f; }
+  .btn-active { background: #fff; color: #1e3c72; }
+
+  .last-number {
+    background: rgba(0,0,0,0.25);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+  .last-number-label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    margin-bottom: 8px;
+  }
+  .last-number-value {
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #ffd54f;
+    text-shadow: 0 4px 20px rgba(255, 213, 79, 0.4);
+  }
+  .last-number-value.empty {
+    color: rgba(255,255,255,0.3);
+    font-size: 2.5rem;
+  }
+  .stats {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    opacity: 0.8;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    background: rgba(0,0,0,0.2);
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+  .cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.95);
+    color: #1e3c72;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .cell.drawn {
+    background: #ffd54f;
+    color: #1e3c72;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 213, 79, 0.4);
+  }
+  .cell.last {
+    background: #ff6b35;
+    color: #fff;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1.05); }
+    50% { transform: scale(1.12); box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6); }
+  }
+  .cell.admin { cursor: pointer; }
+  .cell.admin:hover:not(.drawn) {
+    background: #c5e1a5;
+    transform: scale(1.05);
+  }
+  .cell.admin.drawn:hover {
+    background: #ffab91;
+  }
+
+  .history {
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .history h3 {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+  }
+  .history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .history-item {
+    background: rgba(255,255,255,0.15);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .history-item.latest {
+    background: #ff6b35;
+  }
+  .history-empty {
+    opacity: 0.5;
+    font-style: italic;
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-content {
+    background: #fff;
+    color: #333;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+  }
+  .modal-content h2 { margin-bottom: 16px; color: #1e3c72; }
+  .modal-content input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 16px;
+  }
+  .modal-content input:focus {
+    outline: none;
+    border-color: #2a5298;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .error-msg {
+    color: #e53935;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    min-height: 1.2em;
+  }
+  .info-banner {
+    background: rgba(255, 213, 79, 0.2);
+    border: 1px solid rgba(255, 213, 79, 0.4);
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+  .loading {
+    text-align: center;
+    padding: 40px;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 700px) {
+    h1 { font-size: 1.4rem; }
+    .grid { grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 8px; }
+    .cell { font-size: 0.85rem; }
+    .last-number-value { font-size: 3.5rem; }
+    button { padding: 8px 14px; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🎱 Bingo</h1>
+    <div class="mode-toggle">
+      <button id="viewPublicBtn" class="btn-active">👁 Vue publique</button>
+      <button id="viewAdminBtn" class="btn-secondary">🔒 Admin</button>
+    </div>
+  </header>
+
+  <div id="adminBanner" class="info-banner" style="display:none;">
+    ✏️ Mode admin actif — clique sur un numéro pour le marquer comme tiré (ou le retirer)
+  </div>
+
+  <div class="last-number">
+    <div class="last-number-label">Dernier numéro</div>
+    <div id="lastNumber" class="last-number-value empty">—</div>
+    <div class="stats">
+      <span id="drawnCount">0</span> / 90 tirés
+    </div>
+  </div>
+
+  <div id="loadingState" class="loading">Chargement…</div>
+  <div id="grid" class="grid" style="display:none;"></div>
+
+  <div class="history">
+    <h3>Historique (du plus récent au plus ancien)</h3>
+    <div id="historyList" class="history-list">
+      <span class="history-empty">Aucun numéro tiré pour l'instant</span>
+    </div>
+  </div>
+
+  <div id="adminActions" style="display:none; text-align:center; margin-top: 20px;">
+    <button id="resetBtn" class="btn-danger">🔄 Réinitialiser la partie</button>
+  </div>
+</div>
+
+<div id="passwordModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Accès admin</h2>
+    <p style="margin-bottom: 14px; color: #666;">Entre le mot de passe pour passer en mode admin.</p>
+    <input type="password" id="passwordInput" placeholder="Mot de passe" autocomplete="off">
+    <div id="passwordError" class="error-msg"></div>
+    <div class="modal-actions">
+      <button id="cancelPasswordBtn" class="btn-secondary" style="color:#333; background:#eee;">Annuler</button>
+      <button id="submitPasswordBtn" class="btn-primary">Valider</button>
+    </div>
+  </div>
+</div>
+
+<div id="setupModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Configuration initiale</h2>
+    <p style="margin-bottom: 14px; color: #666;">Première utilisation : définis le mot de passe admin. Il sera partagé avec tous ceux qui ouvriront ce bingo.</p>
+    <input type="password" id="setupPasswordInput" placeholder="Nouveau mot de passe admin" autocomplete="off">
+    <div id="setupError" class="error-msg"></div>
+    <div class="modal-actions">
+      <button id="submitSetupBtn" class="btn-primary">Créer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const TOTAL = 90;
+  const STATE_KEY = 'bingo-state';
+  const PASSWORD_KEY = 'bingo-admin-password';
+
+  let state = { drawn: [], lastNumber: null };
+  let isAdmin = false;
+  let pollInterval = null;
+
+  const grid = document.getElementById('grid');
+  const loadingState = document.getElementById('loadingState');
+  const lastNumberEl = document.getElementById('lastNumber');
+  const drawnCountEl = document.getElementById('drawnCount');
+  const historyListEl = document.getElementById('historyList');
+  const adminBanner = document.getElementById('adminBanner');
+  const adminActions = document.getElementById('adminActions');
+  const viewPublicBtn = document.getElementById('viewPublicBtn');
+  const viewAdminBtn = document.getElementById('viewAdminBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const passwordModal = document.getElementById('passwordModal');
+  const passwordInput = document.getElementById('passwordInput');
+  const passwordError = document.getElementById('passwordError');
+  const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+  const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+
+  const setupModal = document.getElementById('setupModal');
+  const setupPasswordInput = document.getElementById('setupPasswordInput');
+  const setupError = document.getElementById('setupError');
+  const submitSetupBtn = document.getElementById('submitSetupBtn');
+
+  function buildGrid() {
+    grid.innerHTML = '';
+    for (let i = 1; i <= TOTAL; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.textContent = i;
+      cell.dataset.number = i;
+      cell.addEventListener('click', () => {
+        if (!isAdmin) return;
+        toggleNumber(i);
+      });
+      grid.appendChild(cell);
+    }
+  }
+
+  function render() {
+    const drawnSet = new Set(state.drawn);
+    document.querySelectorAll('.cell').forEach(cell => {
+      const n = parseInt(cell.dataset.number);
+      cell.classList.toggle('drawn', drawnSet.has(n));
+      cell.classList.toggle('last', n === state.lastNumber);
+      cell.classList.toggle('admin', isAdmin);
+    });
+
+    if (state.lastNumber) {
+      lastNumberEl.textContent = state.lastNumber;
+      lastNumberEl.classList.remove('empty');
+    } else {
+      lastNumberEl.textContent = '—';
+      lastNumberEl.classList.add('empty');
+    }
+
+    drawnCountEl.textContent = state.drawn.length;
+
+    if (state.drawn.length === 0) {
+      historyListEl.innerHTML = '<span class="history-empty">Aucun numéro tiré pour l\'instant</span>';
+    } else {
+      const reversed = [...state.drawn].reverse();
+      historyListEl.innerHTML = reversed
+        .map((n, idx) => `<span class="history-item${idx === 0 ? ' latest' : ''}">${n}</span>`)
+        .join('');
+    }
+  }
+
+  async function loadState() {
+    try {
+      const result = await window.storage.get(STATE_KEY, true);
+      if (result && result.value) {
+        state = JSON.parse(result.value);
+        if (!Array.isArray(state.drawn)) state.drawn = [];
+      }
+    } catch (e) {
+      state = { drawn: [], lastNumber: null };
+    }
+    loadingState.style.display = 'none';
+    grid.style.display = 'grid';
+    render();
+  }
+
+  async function saveState() {
+    try {
+      await window.storage.set(STATE_KEY, JSON.stringify(state), true);
+    } catch (e) {
+      console.error('Save failed', e);
+    }
+  }
+
+  async function toggleNumber(n) {
+    const idx = state.drawn.indexOf(n);
+    if (idx >= 0) {
+      state.drawn.splice(idx, 1);
+      if (state.lastNumber === n) {
+        state.lastNumber = state.drawn.length > 0 ? state.drawn[state.drawn.length - 1] : null;
+      }
+    } else {
+      state.drawn.push(n);
+      state.lastNumber = n;
+    }
+    render();
+    await saveState();
+  }
+
+  async function resetGame() {
+    if (!confirm('Réinitialiser la partie ? Tous les numéros tirés seront effacés.')) return;
+    state = { drawn: [], lastNumber: null };
+    render();
+    await saveState();
+  }
+
+  async function getStoredPassword() {
+    try {
+      const result = await window.storage.get(PASSWORD_KEY, true);
+      return result && result.value ? result.value : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function setStoredPassword(pwd) {
+    await window.storage.set(PASSWORD_KEY, pwd, true);
+  }
+
+  function setMode(admin) {
+    isAdmin = admin;
+    adminBanner.style.display = admin ? 'block' : 'none';
+    adminActions.style.display = admin ? 'block' : 'none';
+    viewAdminBtn.classList.toggle('btn-active', admin);
+    viewAdminBtn.classList.toggle('btn-secondary', !admin);
+    viewPublicBtn.classList.toggle('btn-active', !admin);
+    viewPublicBtn.classList.toggle('btn-secondary', admin);
+
+    if (admin) {
+      if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+    } else {
+      startPolling();
+    }
+    render();
+  }
+
+  function startPolling() {
+    if (pollInterval) return;
+    pollInterval = setInterval(async () => {
+      if (isAdmin) return;
+      try {
+        const result = await window.storage.get(STATE_KEY, true);
+        if (result && result.value) {
+          const fresh = JSON.parse(result.value);
+          if (JSON.stringify(fresh) !== JSON.stringify(state)) {
+            state = fresh;
+            if (!Array.isArray(state.drawn)) state.drawn = [];
+            render();
+          }
+        }
+      } catch (e) {}
+    }, 2000);
+  }
+
+  async function tryAdminLogin() {
+    const stored = await getStoredPassword();
+    if (!stored) {
+      setupModal.style.display = 'flex';
+      setupPasswordInput.focus();
+      return;
+    }
+    passwordModal.style.display = 'flex';
+    passwordError.textContent = '';
+    passwordInput.value = '';
+    passwordInput.focus();
+  }
+
+  submitPasswordBtn.addEventListener('click', async () => {
+    const stored = await getStoredPassword();
+    if (passwordInput.value === stored) {
+      passwordModal.style.display = 'none';
+      setMode(true);
+    } else {
+      passwordError.textContent = 'Mot de passe incorrect';
+    }
+  });
+  passwordInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitPasswordBtn.click();
+  });
+  cancelPasswordBtn.addEventListener('click', () => {
+    passwordModal.style.display = 'none';
+  });
+
+  submitSetupBtn.addEventListener('click', async () => {
+    const pwd = setupPasswordInput.value.trim();
+    if (pwd.length < 3) {
+      setupError.textContent = 'Au moins 3 caractères';
+      return;
+    }
+    await setStoredPassword(pwd);
+    setupModal.style.display = 'none';
+    setMode(true);
+  });
+  setupPasswordInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitSetupBtn.click();
+  });
+
+  viewAdminBtn.addEventListener('click', () => {
+    if (isAdmin) return;
+    tryAdminLogin();
+  });
+  viewPublicBtn.addEventListener('click', () => {
+    if (!isAdmin) return;
+    setMode(false);
+  });
+  resetBtn.addEventListener('click', resetGame);
+
+  buildGrid();
+  loadState().then(() => startPolling());
+</script>
+</body>
+</html>
